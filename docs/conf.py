@@ -4,15 +4,15 @@
 # list see the documentation:
 # https://www.sphinx-doc.org/en/master/usage/configuration.html
 
-import dls_python3_skeleton
+import arc_hvbias
 
 # -- General configuration ------------------------------------------------
 
 # General information about the project.
-project = "dls-python3-skeleton"
+project = "arc_hvbias"
 
 # The full version, including alpha/beta/rc tags.
-release = dls_python3_skeleton.__version__
+release = arc_hvbias.__version__
 
 # The short X.Y version.
 if "+" in release:
