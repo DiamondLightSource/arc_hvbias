@@ -1,5 +1,7 @@
-Installation
-============
+Installing this IOC on the Beamline
+===================================
+
+TODO: reference the softiocs settings needed to make this run etc.
 
 .. note::
 

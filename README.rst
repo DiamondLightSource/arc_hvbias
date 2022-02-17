@@ -3,8 +3,9 @@ arc_hvbias
 
 |code_ci| |docs_ci| |coverage| |pypi_version| |license|
 
-This is where you should write a short paragraph that describes what your module does,
-how it does it, and why people should use it.
+A soft IOC for Keithley 2400 providing HV bias for the Arc detector.
+
+Intended to run on beamline BL15J at Diamond Light Source.
 
 ============== ==============================================================
 PyPI           ``pip install arc_hvbias``
@@ -13,20 +14,6 @@ Documentation  https://dls-controls.github.io/arc_hvbias
 Releases       https://github.com/dls-controls/arc_hvbias/releases
 ============== ==============================================================
 
-This is where you should put some images or code snippets that illustrate
-some relevant examples. If it is a library then you might put some
-introductory code here:
-
-.. code:: python
-
-    from arc_hvbias.hello import HelloClass
-
-    hello = HelloClass("me")
-    print(hello.format_greeting())
-
-Or if it is a commandline tool then you might put some example commands here::
-
-    arc_hvbias person --times=2
 
 .. |code_ci| image:: https://github.com/dls-controls/arc_hvbias/workflows/Code%20CI/badge.svg?branch=master
     :target: https://github.com/dls-controls/arc_hvbias/actions?query=workflow%3A%22Code+CI%22
