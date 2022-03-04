@@ -1,16 +1,14 @@
-#Arming (not needed?)
-:ARM:SEQ1:LAYER1:SOURCE IMMEDIATE
-:TRIGGER:ARM:SEQ1:LAYER1:COUNT 1
-
 # Queries
 :OUTPUT:STATE?	
+:SENSE:FUNCTION:STATE? "VOLTAGE"
 
 # setup for a voltage sweep
+:syst:beep:stat 0
 :SOURCE:CLEAR:IMMEDIATE
 :SOURCE:FUNCTION:MODE VOLTAGE
 :SOURCE:VOLTAGE:MODE SWEEP
 :SOURCE:SWEEP:SPACING LINEAR
-:SOURCE:VOLTAGE:RANGE -500
+:SOURCE:VOLTAGE:RANGE:AUTO 1
 
 :SOURCE:VOLTAGE:START 0
 :SOURCE:VOLTAGE:STOP 50
@@ -26,6 +24,11 @@
 :INIT
 
 
-not working ...
-:SENSE:FUNCTION:STATE?
-:SENSE1:FUNCTION:STATE VOLTAGE
+# Monitor the voltage
+:SENSE:VOLTAGE:DC:RANGE:AUTO 1  # TODO SENSE may be useful for monitoring the current since I think we need a safety cutoff 
+
+
+# simpler just to set and query the voltage!!
+# do the sweep in python
+:SOURCE:VOLTAGE 20
+:SOURCE:VOLTAGE?

@@ -1,7 +1,7 @@
 from argparse import ArgumentParser
 
 from . import __version__
-from .keithley import Keithley
+from .ioc import Ioc
 
 __all__ = ["main"]
 
@@ -11,7 +11,9 @@ def main(args=None):
     parser.add_argument("--version", action="version", version=__version__)
     args = parser.parse_args(args)
 
-    k = Keithley()
+    ioc = Ioc()
+
+    # clean up
 
 
 # test with: pipenv run python -m arc_hvbias
