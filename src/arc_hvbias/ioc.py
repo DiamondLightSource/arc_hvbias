@@ -27,7 +27,7 @@ class Ioc:
 
     def __init__(self):
         # Set the record prefix
-        builder.SetDeviceName("BL15J-EA-HV-01:")
+        builder.SetDeviceName("BL15J-EA-HV-01")
         # Create some records
         self.cmd_ramp_off = builder.boolOut(
             "RAMP-OFF", always_update=True, on_update=self.ramp_off
@@ -35,18 +35,19 @@ class Ioc:
         self.cmd_ramp_on = builder.boolOut(
             "RAMP-ON", always_update=True, on_update=self.ramp_on
         )
-        self.cmd_output = builder.boolOut(
-            "OUTPUT", always_update=True, on_update=self.do_output
-        )
         self.cmd_depolarise = builder.boolOut(
             "DEPOLARISE", always_update=True, on_update=self.do_depolarise
         )
         self.cmd_stop = builder.boolOut(
             "STOP", always_update=True, on_update=self.do_stop
         )
-        self.voltage = builder.aIn("VOLTAGE_RBV")
-        self.current = builder.aIn("CURRENT_RBV")
-        self.status = builder.mbbIn(
+        self.cmd_output = builder.boolOut(
+            "OUTPUT", always_update=True, on_update=self.do_output
+        )
+        self.output_rbv = builder.boolIn("OUTPUT_RBV")
+        self.voltage_rbv = builder.aIn("VOLTAGE_RBV")
+        self.current_rbv = builder.aIn("CURRENT_RBV")
+        self.status_rbv = builder.mbbIn(
             "STATUS",
             "VOLTAGE-OFF",
             "VOLTAGE-ON",
@@ -55,14 +56,16 @@ class Ioc:
             "RAMP-DOWN",
             ("ERROR", "MAJOR"),
         )
-        self.status = builder.mbbIn("HEALTHY-STATUS", "HEALTHY", ("UNHEALTHY", "MINOR"))
+        self.status_rbv = builder.mbbIn(
+            "HEALTHY-STATUS", "HEALTHY", ("UNHEALTHY", "MINOR")
+        )
         self.on_setpoint = builder.aOut("VOLTAGE-ON-SETPOINT")
         self.off_setpoint = builder.aOut("VOLTAGE-OFF-SETPOINT")
         self.rise_time = builder.aOut("RISE-TIME")
         self.hold_time = builder.aOut("HOLD-TIME")
         self.fall_time = builder.aOut("FALL-TIME")
-        self.depolarise_repeats = builder.iOut("DEPOLARISE-REPEATS")
-        self.depolarise_pause_time = builder.iOut("DEPOLARISE-PAUSE-TIME")
+        self.depolarise_repeats = builder.longOut("DEPOLARISE-REPEATS")
+        self.depolarise_pause_time = builder.longOut("DEPOLARISE-PAUSE-TIME")
 
         # Boilerplate get the IOC started
         builder.LoadDatabase()
@@ -77,8 +80,9 @@ class Ioc:
     # Start processes required to be run after iocInit
     def update(self):
         while True:
-            self.voltage.set(self.k.get_voltage())
-            self.voltage.set(self.k.get_current())
+            self.voltage_rbv.set(self.k.get_voltage())
+            self.current_rbv.set(self.k.get_current())
+            self.output_rbv.set(self.k.get_source_status())
             cothread.Sleep(1)
 
     def do_output(self, on_off: bool):
@@ -93,8 +97,8 @@ class Ioc:
     def do_depolarise(self):
         pass
 
-    def ramp_on(self):
+    def ramp_on(self, start: bool):
         self.k.source_voltage_ramp(start=0, stop=50, steps=50, seconds=20)
 
-    def ramp_off(self):
+    def ramp_off(self, start: bool):
         self.k.source_voltage_ramp(start=0, stop=50, steps=50, seconds=20)
