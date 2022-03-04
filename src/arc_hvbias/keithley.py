@@ -2,6 +2,8 @@
 Defines a connection to a Kiethley 2400 over serial and provides an interface
 to command and query the device
 """
+import math
+
 import cothread
 import serial
 
@@ -38,8 +40,8 @@ class Keithley(object):
 
         if respond or send.endswith("?"):
             response = self.ser.readline(100).decode()
+            self.ser.flush()
         else:
-            print("command", send)
             self.ser.flush()
             response = ""
 
@@ -50,11 +52,14 @@ class Keithley(object):
         return float(volts)
 
     def set_voltage(self, volts: float):
+        # only allow negative voltages
+        volts = math.fabs(volts) * -1
         return self.send_recv(f":SOURCE:VOLTAGE {volts}")
 
     def get_current(self) -> float:
         amps = self.send_recv(":SOURCE:CURRENT?")
-        return float(amps)
+        # make it mAmps
+        return float(amps) * 1000
 
     def source_off(self):
         self.send_recv(":SOURCE:CLEAR:IMMEDIATE")
@@ -62,9 +67,9 @@ class Keithley(object):
     def source_on(self):
         self.send_recv(":OUTPUT:STATE ON")
 
-    def get_source_status(self) -> bool:
+    def get_source_status(self) -> int:
         result = self.send_recv(":OUTPUT:STATE?")
-        return bool(result)
+        return int(result)
 
     def source_voltage_ramp(
         self, start: float, stop: float, steps: int, seconds: float

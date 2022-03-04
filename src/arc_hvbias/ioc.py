@@ -26,6 +26,9 @@ class Ioc:
     """
 
     def __init__(self):
+        # connect to the Keithley via serial
+        self.k = Keithley()
+
         # Set the record prefix
         builder.SetDeviceName("BL15J-EA-HV-01")
         # Create some records
@@ -44,9 +47,12 @@ class Ioc:
         self.cmd_output = builder.boolOut(
             "OUTPUT", always_update=True, on_update=self.do_output
         )
-        self.output_rbv = builder.boolIn("OUTPUT_RBV")
-        self.voltage_rbv = builder.aIn("VOLTAGE_RBV")
-        self.current_rbv = builder.aIn("CURRENT_RBV")
+        self.cmd_output = builder.aOut(
+            "VOLTAGE", always_update=True, on_update=self.k.set_voltage
+        )
+        self.voltage_rbv = builder.aIn("VOLTAGE_RBV", EGU="Volts")
+        self.current_rbv = builder.aIn("CURRENT_RBV", EGU="Amps")
+        self.output_rbv = builder.mbbIn("OUTPUT_RBV", "OFF", "ON")
         self.status_rbv = builder.mbbIn(
             "STATUS",
             "VOLTAGE-OFF",
@@ -57,21 +63,19 @@ class Ioc:
             ("ERROR", "MAJOR"),
         )
         self.status_rbv = builder.mbbIn(
-            "HEALTHY-STATUS", "HEALTHY", ("UNHEALTHY", "MINOR")
+            "HEALTHY_RBV", ("UNHEALTHY", "MINOR"), "HEALTHY"
         )
-        self.on_setpoint = builder.aOut("VOLTAGE-ON-SETPOINT")
-        self.off_setpoint = builder.aOut("VOLTAGE-OFF-SETPOINT")
+        self.on_setpoint = builder.aOut("ON-SETPOINT")
+        self.off_setpoint = builder.aOut("OFF-SETPOINT")
         self.rise_time = builder.aOut("RISE-TIME")
         self.hold_time = builder.aOut("HOLD-TIME")
         self.fall_time = builder.aOut("FALL-TIME")
-        self.depolarise_repeats = builder.longOut("DEPOLARISE-REPEATS")
-        self.depolarise_pause_time = builder.longOut("DEPOLARISE-PAUSE-TIME")
+        self.pause_time = builder.longOut("PAUSE-TIME")
+        self.repeats = builder.longOut("REPEATS")
 
         # Boilerplate get the IOC started
         builder.LoadDatabase()
         softioc.iocInit()
-
-        self.k = Keithley()
 
         cothread.Spawn(self.update)
         # Finally leave the IOC running with an interactive shell.
@@ -83,6 +87,8 @@ class Ioc:
             self.voltage_rbv.set(self.k.get_voltage())
             self.current_rbv.set(self.k.get_current())
             self.output_rbv.set(self.k.get_source_status())
+            healthy = self.output_rbv == 1 and self.voltage_rbv <= self.on_setpoint
+            self.status_rbv.set(healthy)
             cothread.Sleep(1)
 
     def do_output(self, on_off: bool):
@@ -90,6 +96,10 @@ class Ioc:
             self.k.source_on()
         else:
             self.k.source_off()
+
+    def set_voltage(self, volts: str):
+        print("set", volts)
+        self.k.set_voltage(float(volts))
 
     def do_stop(self):
         pass
