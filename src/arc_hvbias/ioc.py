@@ -1,6 +1,6 @@
 import math
 from datetime import datetime
-from enum import Enum
+from enum import IntEnum
 
 import cothread
 
@@ -10,18 +10,19 @@ from softioc import builder, softioc
 from .keithley import Keithley
 
 
+class Status(IntEnum):
+    VOLTAGE_OFF = 0
+    VOLTAGE_ON = 1
+    RAMP_UP = 2
+    HOLD = 3
+    RAMP_DOWN = 4
+    ERROR = 5
+
+
 class Ioc:
     """
     A Soft IOC to provide the PVs to control and monitor the Keithley class
     """
-
-    class Status(Enum):
-        VOLTAGE_OFF = 0
-        VOLTAGE_ON = 1
-        RAMP_UP = 2
-        HOLD = 3
-        RAMP_DOWN = 4
-        ERROR = 5
 
     def __init__(self):
         # connect to the Keithley via serial
@@ -52,7 +53,7 @@ class Ioc:
         self.voltage_rbv = builder.aIn("VOLTAGE_RBV", EGU="Volts")
         self.current_rbv = builder.aIn("CURRENT_RBV", EGU="mA", PREC=4)
         self.output_rbv = builder.mbbIn("OUTPUT_RBV", "OFF", "ON")
-        self.status_rbv = builder.mbbIn("STATUS", *self.Status.__members__)
+        self.status_rbv = builder.mbbIn("STATUS", *Status.__members__)
         self.healthy_rbv = builder.mbbIn("HEALTHY_RBV", "UNHEALTHY", "HEALTHY")
         self.cycle_rbv = builder.mbbIn("CYCLE_RBV", "IDLE", "RUNNING")
         self.time_since_rbv = builder.longIn("TIME-SINCE", EGU="Sec")
@@ -86,7 +87,6 @@ class Ioc:
     def update(self):
         while True:
             try:
-                # query device for current readings
                 self.voltage_rbv.set(self.k.get_voltage())
                 self.current_rbv.set(self.k.get_current())
                 self.output_rbv.set(self.k.get_source_status())
@@ -109,19 +109,18 @@ class Ioc:
                 cothread.Sleep(0.5)
             except ValueError as e:
                 # catch conversion errors when device returns and error string
-                print(e)
-                print(self.k.last_recv)
+                print(e, self.k.last_recv)
 
     def cycle_control(self):
         # this function implements a trivial state machine controlled
         # by self.status_rbv
-        if self.status_rbv == self.Status.VOLTAGE_ON.value:
+        if self.status_rbv == Status.VOLTAGE_ON:
             pass
-        elif self.status_rbv == self.Status.RAMP_UP.value:
+        elif self.status_rbv == Status.RAMP_UP:
             pass
-        elif self.status_rbv == self.Status.RAMP_DOWN.value:
+        elif self.status_rbv == Status.RAMP_DOWN:
             pass
-        elif self.status_rbv == self.Status.VOLTAGE_OFF.value:
+        elif self.status_rbv == Status.VOLTAGE_OFF:
             pass
 
     def do_output(self, on_off: bool):
@@ -138,19 +137,21 @@ class Ioc:
         if stop == 1:
             self.cycle_rbv.set(0)
             self.cycle.set(0)
-            self.status_rbv.set(self.Status.HOLD.value)
+            self.status_rbv.set(Status.HOLD)
 
     def do_start_cycle(self, do: int):
         if do == 1:
             self.cycle_rbv.set(1)
 
     def do_ramp_on(self, start: bool):
+        self.status_rbv.set(Status.RAMP_DOWN)
         seconds = self.rise_time.get()
         to_volts = self.on_setpoint.get()
         step_size = self.step_size.get()
         self.k.voltage_sweep(to_volts, step_size, seconds)
 
     def do_ramp_off(self, start: bool):
+        self.status_rbv.set(Status.RAMP_UP)
         seconds = self.rise_time.get()
         to_volts = self.off_setpoint.get()
         step_size = self.step_size.get()
