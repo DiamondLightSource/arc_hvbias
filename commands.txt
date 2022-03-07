@@ -25,11 +25,8 @@
 
 
 # Monitor the voltage
-:SENSE:VOLTAGE:DC:RANGE:AUTO 1  
+:SENSE:VOLTAGE:DC:RANGE:AUTO 1  # TODO SENSE may be useful for monitoring the current since I think we need a safety cutoff 
 
-# TODO SENSE may be useful for monitoring the current since I think we need a safety cutoff 
-
-##############################################################################
 
 # simpler just to set and query the voltage!!
 # do the sweep in python

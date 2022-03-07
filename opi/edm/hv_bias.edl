@@ -3,9 +3,9 @@ beginScreenProperties
 major 4
 minor 0
 release 1
-x 2610
-y 1229
-w 749
+x 194
+y 715
+w 1038
 h 450
 font "arial-medium-r-16.0"
 ctlFont "arial-bold-r-16.0"
@@ -25,14 +25,29 @@ snapToGrid
 gridSize 5
 endScreenProperties
 
+# (Rectangle)
+object activeRectangleClass
+beginObjectProperties
+major 4
+minor 0
+release 0
+x 625
+y 20
+w 245
+h 175
+lineColor index 14
+fill
+fillColor index 5
+endObjectProperties
+
 # (Exit Button)
 object activeExitButtonClass
 beginObjectProperties
 major 4
 minor 1
 release 0
-x 570
-y 405
+x 880
+y 400
 w 100
 h 35
 fgColor index 46
@@ -52,8 +67,8 @@ minor 0
 release 0
 x 15
 y 20
-w 320
-h 220
+w 310
+h 300
 lineColor index 14
 fill
 fillColor index 5
@@ -67,13 +82,13 @@ minor 1
 release 1
 x 15
 y 10
-w 98
+w 55
 h 13
 font "arial-medium-r-12.0"
 fgColor index 14
 bgColor index 8
 value {
-  "  HV BIAS Control"
+  "  HV BIAS"
 }
 autoSize
 border
@@ -87,34 +102,16 @@ minor 1
 release 1
 x 20
 y 45
-w 109
+w 83
 h 16
 font "arial-bold-r-14.0"
 fgColor index 14
 bgColor index 0
 useDisplayBg
 value {
-  "Set Voltage (-V)"
+  "Voltage (-V)"
 }
 autoSize
-endObjectProperties
-
-# (Textentry)
-object TextentryClass
-beginObjectProperties
-major 10
-minor 0
-release 0
-x 145
-y 35
-w 70
-h 40
-controlPv "BL15J-EA-HV-01:VOLTAGE"
-displayMode "decimal"
-fgColor index 25
-bgColor index 3
-fill
-font "arial-bold-r-16.0"
 endObjectProperties
 
 # (Textupdate)
@@ -123,9 +120,9 @@ beginObjectProperties
 major 10
 minor 0
 release 0
-x 220
+x 145
 y 35
-w 110
+w 170
 h 40
 controlPv "BL15J-EA-HV-01:VOLTAGE_RBV"
 fgColor index 16
@@ -165,10 +162,9 @@ minor 0
 release 0
 x 145
 y 85
-w 185
+w 170
 h 40
 controlPv "BL15J-EA-HV-01:CURRENT_RBV"
-displayMode "decimal"
 precision 4
 fgColor index 16
 fgAlarm
@@ -186,9 +182,9 @@ major 4
 minor 0
 release 0
 x 15
-y 255
-w 320
-h 180
+y 335
+w 310
+h 100
 lineColor index 14
 fill
 fillColor index 5
@@ -201,7 +197,7 @@ major 4
 minor 1
 release 1
 x 15
-y 250
+y 330
 w 48
 h 13
 font "arial-medium-r-12.0"
@@ -220,8 +216,8 @@ beginObjectProperties
 major 4
 minor 0
 release 0
-x 30
-y 300
+x 35
+y 380
 w 25
 h 20
 controlPv "BL15J-EA-HV-01:OUTPUT_RBV"
@@ -238,8 +234,8 @@ beginObjectProperties
 major 4
 minor 1
 release 1
-x 65
-y 280
+x 70
+y 360
 w 52
 h 16
 font "arial-bold-r-14.0"
@@ -258,10 +254,10 @@ beginObjectProperties
 major 4
 minor 1
 release 1
-x 65
-y 305
-w 126
-h 16
+x 70
+y 385
+w 125
+h 15
 font "arial-bold-r-14.0"
 fgColor index 14
 bgColor index 0
@@ -278,8 +274,8 @@ beginObjectProperties
 major 4
 minor 0
 release 0
-x 30
-y 275
+x 35
+y 355
 w 25
 h 20
 controlPv "BL15J-EA-HV-01:HEALTHY_RBV"
@@ -299,7 +295,7 @@ release 0
 x 355
 y 20
 w 245
-h 220
+h 415
 lineColor index 14
 fill
 fillColor index 5
@@ -356,7 +352,6 @@ y 35
 w 110
 h 40
 controlPv "BL15J-EA-HV-01:RISE-TIME"
-displayMode "decimal"
 precision 2
 fgColor index 25
 bgColor index 3
@@ -375,7 +370,6 @@ y 85
 w 110
 h 40
 controlPv "BL15J-EA-HV-01:HOLD-TIME"
-displayMode "decimal"
 precision 2
 fgColor index 25
 bgColor index 3
@@ -434,7 +428,6 @@ y 135
 w 110
 h 40
 controlPv "BL15J-EA-HV-01:FALL-TIME"
-displayMode "decimal"
 precision 2
 fgColor index 25
 bgColor index 3
@@ -453,7 +446,6 @@ y 185
 w 110
 h 40
 controlPv "BL15J-EA-HV-01:HOLD-TIME"
-displayMode "decimal"
 precision 2
 fgColor index 25
 bgColor index 3
@@ -489,7 +481,7 @@ minor 0
 release 0
 x 145
 y 135
-w 110
+w 170
 h 40
 controlPv "BL15J-EA-HV-01:ON-SETPOINT"
 displayMode "decimal"
@@ -527,7 +519,7 @@ minor 0
 release 0
 x 145
 y 185
-w 110
+w 170
 h 40
 controlPv "BL15J-EA-HV-01:OFF-SETPOINT"
 displayMode "decimal"
@@ -555,5 +547,333 @@ value {
   "Off Setpoint (-V)"
 }
 autoSize
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 25
+y 235
+w 290
+h 35
+fgColor index 25
+onColor index 4
+offColor index 3
+topShadowColor index 1
+botShadowColor index 11
+controlPv "BL15J-EA-HV-01:RAMP-ON.PROC"
+pressValue "1"
+onLabel "Ramp to ON Setpoint"
+offLabel "Ramp to ON Setpoint"
+3d
+useEnumNumeric
+font "arial-bold-r-14.0"
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 25
+y 280
+w 290
+h 35
+fgColor index 25
+onColor index 4
+offColor index 3
+topShadowColor index 1
+botShadowColor index 11
+controlPv "BL15J-EA-HV-01:RAMP-OFF"
+pressValue "1"
+onLabel "Ramp to OFF Setpoint"
+offLabel "Ramp to OFF Setpoint"
+3d
+useEnumNumeric
+font "arial-bold-r-14.0"
+endObjectProperties
+
+# (Textentry)
+object TextentryClass
+beginObjectProperties
+major 10
+minor 0
+release 0
+x 475
+y 235
+w 110
+h 40
+controlPv "BL15J-EA-HV-01:REPEATS"
+precision 2
+fgColor index 25
+bgColor index 3
+fill
+font "arial-bold-r-16.0"
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 360
+y 245
+w 57
+h 16
+font "arial-bold-r-14.0"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "Repeats"
+}
+autoSize
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 70
+y 410
+w 150
+h 16
+font "arial-bold-r-14.0"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "Depolarisation Cycle"
+}
+autoSize
+endObjectProperties
+
+# (Byte)
+object ByteClass
+beginObjectProperties
+major 4
+minor 0
+release 0
+x 35
+y 405
+w 25
+h 20
+controlPv "BL15J-EA-HV-01:CYCLE_RBV"
+lineColor index 14
+onColor index 15
+offColor index 24
+lineWidth 2
+numBits 1
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 365
+y 390
+w 225
+h 35
+fgColor index 25
+onColor index 4
+offColor index 3
+topShadowColor index 1
+botShadowColor index 11
+controlPv "BL15J-EA-HV-01:CYCLE"
+pressValue "1"
+onLabel "Start Cycle"
+offLabel "Start Cycle"
+3d
+useEnumNumeric
+font "arial-bold-r-14.0"
+endObjectProperties
+
+# (Textentry)
+object TextentryClass
+beginObjectProperties
+major 10
+minor 0
+release 0
+x 475
+y 285
+w 110
+h 40
+controlPv "BL15J-EA-HV-01:STEP-SIZE"
+precision 2
+fgColor index 25
+bgColor index 3
+fill
+font "arial-bold-r-16.0"
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 360
+y 295
+w 88
+h 16
+font "arial-bold-r-14.0"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "Step Size (V)"
+}
+autoSize
+endObjectProperties
+
+# (Message Button)
+object activeMessageButtonClass
+beginObjectProperties
+major 4
+minor 1
+release 0
+x 365
+y 340
+w 225
+h 35
+fgColor index 20
+onColor index 4
+offColor index 3
+topShadowColor index 1
+botShadowColor index 11
+controlPv "BL15J-EA-HV-01:STOP"
+pressValue "1"
+onLabel "STOP"
+offLabel "STOP"
+3d
+useEnumNumeric
+font "arial-bold-r-14.0"
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 625
+y 10
+w 130
+h 13
+font "arial-medium-r-12.0"
+fgColor index 14
+bgColor index 8
+value {
+  "  Depolarisation Timing"
+}
+autoSize
+border
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 630
+y 45
+w 90
+h 16
+font "arial-bold-r-14.0"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "Max Time (s)"
+}
+autoSize
+endObjectProperties
+
+# (Textentry)
+object TextentryClass
+beginObjectProperties
+major 10
+minor 0
+release 0
+x 745
+y 35
+w 110
+h 40
+controlPv "BL15J-EA-HV-01:MAX-TIME"
+precision 2
+fgColor index 25
+bgColor index 3
+fill
+font "arial-bold-r-16.0"
+endObjectProperties
+
+# (Static Text)
+object activeXTextClass
+beginObjectProperties
+major 4
+minor 1
+release 1
+x 630
+y 95
+w 101
+h 16
+font "arial-bold-r-14.0"
+fgColor index 14
+bgColor index 0
+useDisplayBg
+value {
+  "Time Since (s)"
+}
+autoSize
+endObjectProperties
+
+# (Textupdate)
+object TextupdateClass
+beginObjectProperties
+major 10
+minor 0
+release 0
+x 745
+y 85
+w 110
+h 40
+controlPv "BL15J-EA-HV-01:TIME-SINCE"
+fgColor index 16
+fgAlarm
+bgColor index 12
+fill
+font "arial-bold-r-16.0"
+fontAlign "center"
+lineWidth 2
+endObjectProperties
+
+# (Textupdate)
+object TextupdateClass
+beginObjectProperties
+major 10
+minor 0
+release 0
+x 165
+y 340
+w 155
+h 30
+controlPv "BL15J-EA-HV-01:STATUS"
+fgColor index 16
+fgAlarm
+bgColor index 12
+fill
+font "arial-bold-r-14.0"
+fontAlign "center"
+lineWidth 2
 endObjectProperties
 

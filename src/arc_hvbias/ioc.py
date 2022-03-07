@@ -1,3 +1,7 @@
+import math
+from datetime import datetime
+from enum import Enum
+
 import cothread
 
 # Import the basic framework components.
@@ -8,22 +12,16 @@ from .keithley import Keithley
 
 class Ioc:
     """
-    voltageRBV  0 to -500 V	Readback value for the instananeous voltage.
-    currentRBV  50 mA	Readback value for the instananeous current.
-    voltageOnSetpoint	-500 V	Voltage to use when the detector is in operation. -400 to -600 Vdc (<100mA)
-    voltageOffSetpoint	0 V	Voltage to reach during a depolarisation cycle. Probably 0 V.
-    depolarisationRiseTime	0.25 s	Time taken to change from voltageOnSetpoint to voltageOffSetpoint
-    depolarisationHoldTime	1 s	Time at which the voltage is held at voltageOffSetpoint
-    depolarisationFallTime	0.2 s	Time taken to change from voltageOffSetpoint to voltageOnSetpoint
-    depolarisationPauseTime	0 s	Time taken after a depolarisation cycle before the detector is declared ready for use.
-    depolarisationRepeats	1	Number of times that the depolarisation cycle is repeated
-    depolarisationMaxTime	900 s	The maximum time in seconds from the completion of a depolarisation cycle. If this is exceeded, the detector should automatically undergo a depolarisation cycle.
-    timeSinceDepolarisationRBV	0-900 s	A counter, counting up the time since the last depolarisation cycle. Refresh at 10 Hz should be fine.
-    runDepolarisation	n/a	A value we can send '1' to to initiate a depolarisation cycle.
-    statusRBV	0,1,2,3,4	Status of the bias, e.g. 0=voltageOff, 1=voltageOn, 2=rampUp, 3=hold, 4=rampDown.
-    healthyStatusRBV	0,1	Value of 1 when the voltage is on, but 0 at all other times.
-    stop
+    A Soft IOC to provide the PVs to control and monitor the Keithley class
     """
+
+    class Status(Enum):
+        VOLTAGE_OFF = 0
+        VOLTAGE_ON = 1
+        RAMP_UP = 2
+        HOLD = 3
+        RAMP_DOWN = 4
+        ERROR = 5
 
     def __init__(self):
         # connect to the Keithley via serial
@@ -31,15 +29,16 @@ class Ioc:
 
         # Set the record prefix
         builder.SetDeviceName("BL15J-EA-HV-01")
-        # Create some records
+
+        # Create some output records (for IOC readouts)
         self.cmd_ramp_off = builder.boolOut(
-            "RAMP-OFF", always_update=True, on_update=self.ramp_off
+            "RAMP-OFF", always_update=True, on_update=self.do_ramp_off
         )
         self.cmd_ramp_on = builder.boolOut(
-            "RAMP-ON", always_update=True, on_update=self.ramp_on
+            "RAMP-ON", always_update=True, on_update=self.do_ramp_on
         )
-        self.cmd_depolarise = builder.boolOut(
-            "DEPOLARISE", always_update=True, on_update=self.do_depolarise
+        self.cycle = builder.boolOut(
+            "CYCLE", always_update=True, on_update=self.do_start_cycle
         )
         self.cmd_stop = builder.boolOut(
             "STOP", always_update=True, on_update=self.do_stop
@@ -47,31 +46,33 @@ class Ioc:
         self.cmd_output = builder.boolOut(
             "OUTPUT", always_update=True, on_update=self.do_output
         )
-        self.cmd_output = builder.aOut(
+        self.cmd_voltage = builder.aOut(
             "VOLTAGE", always_update=True, on_update=self.k.set_voltage
         )
         self.voltage_rbv = builder.aIn("VOLTAGE_RBV", EGU="Volts")
-        self.current_rbv = builder.aIn("CURRENT_RBV", EGU="Amps")
+        self.current_rbv = builder.aIn("CURRENT_RBV", EGU="mA", PREC=4)
         self.output_rbv = builder.mbbIn("OUTPUT_RBV", "OFF", "ON")
-        self.status_rbv = builder.mbbIn(
-            "STATUS",
-            "VOLTAGE-OFF",
-            "VOLTAGE-ON",
-            "RAMP-UP",
-            "HOLD",
-            "RAMP-DOWN",
-            ("ERROR", "MAJOR"),
+        self.status_rbv = builder.mbbIn("STATUS", *self.Status.__members__)
+        self.healthy_rbv = builder.mbbIn("HEALTHY_RBV", "UNHEALTHY", "HEALTHY")
+        self.cycle_rbv = builder.mbbIn("CYCLE_RBV", "IDLE", "RUNNING")
+        self.time_since_rbv = builder.longIn("TIME-SINCE", EGU="Sec")
+
+        # create some input records (for IOC inputs)
+        self.on_setpoint = builder.aOut("ON-SETPOINT", initial_value=500, EGU="Volts")
+        self.off_setpoint = builder.aOut("OFF-SETPOINT", EGU="Volts")
+        self.rise_time = builder.aOut(
+            "RISE-TIME", initial_value=0.25, EGU="Sec", PREC=2
         )
-        self.status_rbv = builder.mbbIn(
-            "HEALTHY_RBV", ("UNHEALTHY", "MINOR"), "HEALTHY"
-        )
-        self.on_setpoint = builder.aOut("ON-SETPOINT")
-        self.off_setpoint = builder.aOut("OFF-SETPOINT")
-        self.rise_time = builder.aOut("RISE-TIME")
-        self.hold_time = builder.aOut("HOLD-TIME")
-        self.fall_time = builder.aOut("FALL-TIME")
-        self.pause_time = builder.longOut("PAUSE-TIME")
-        self.repeats = builder.longOut("REPEATS")
+        self.hold_time = builder.aOut("HOLD-TIME", initial_value=1, EGU="Sec", PREC=2)
+        self.fall_time = builder.aOut("FALL-TIME", initial_value=0.2, EGU="Sec", PREC=2)
+        self.pause_time = builder.aOut("PAUSE-TIME", EGU="Sec", PREC=2)
+        self.repeats = builder.longOut("REPEATS", initial_value=1)
+        self.step_size = builder.aOut("STEP-SIZE", initial_value=5.0)
+        self.max_time = builder.longOut("MAX-TIME", initial_value=900)
+
+        # other state variables
+        self.last_time = datetime.now()
+        self.last_transition = datetime.now()
 
         # Boilerplate get the IOC started
         builder.LoadDatabase()
@@ -81,15 +82,47 @@ class Ioc:
         # Finally leave the IOC running with an interactive shell.
         softioc.interactive_ioc(globals())
 
-    # Start processes required to be run after iocInit
+    # main update loop
     def update(self):
         while True:
-            self.voltage_rbv.set(self.k.get_voltage())
-            self.current_rbv.set(self.k.get_current())
-            self.output_rbv.set(self.k.get_source_status())
-            healthy = self.output_rbv == 1 and self.voltage_rbv <= self.on_setpoint
-            self.status_rbv.set(healthy)
-            cothread.Sleep(1)
+            try:
+                # query device for current readings
+                self.voltage_rbv.set(self.k.get_voltage())
+                self.current_rbv.set(self.k.get_current())
+                self.output_rbv.set(self.k.get_source_status())
+
+                # calculate housekeeping readbacks
+                healthy = self.output_rbv.get() == 1 and math.fabs(
+                    self.voltage_rbv.get()
+                ) == math.fabs(self.on_setpoint.get())
+                self.healthy_rbv.set(healthy)
+
+                if self.voltage_rbv.get() == -math.fabs(self.off_setpoint.get()):
+                    self.last_time = datetime.now()
+                since = (datetime.now() - self.last_time).total_seconds()
+                self.time_since_rbv.set(int(since))
+
+                if self.cycle_rbv.get() == 1:
+                    self.cycle_control()
+
+                # update loop at 2 Hz
+                cothread.Sleep(0.5)
+            except ValueError as e:
+                # catch conversion errors when device returns and error string
+                print(e)
+                print(self.k.last_recv)
+
+    def cycle_control(self):
+        # this function implements a trivial state machine controlled
+        # by self.status_rbv
+        if self.status_rbv == self.Status.VOLTAGE_ON.value:
+            pass
+        elif self.status_rbv == self.Status.RAMP_UP.value:
+            pass
+        elif self.status_rbv == self.Status.RAMP_DOWN.value:
+            pass
+        elif self.status_rbv == self.Status.VOLTAGE_OFF.value:
+            pass
 
     def do_output(self, on_off: bool):
         if on_off:
@@ -98,17 +131,27 @@ class Ioc:
             self.k.source_off()
 
     def set_voltage(self, volts: str):
-        print("set", volts)
         self.k.set_voltage(float(volts))
 
-    def do_stop(self):
-        pass
+    def do_stop(self, stop: int):
+        print(self.rise_time.get())
+        if stop == 1:
+            self.cycle_rbv.set(0)
+            self.cycle.set(0)
+            self.status_rbv.set(self.Status.HOLD.value)
 
-    def do_depolarise(self):
-        pass
+    def do_start_cycle(self, do: int):
+        if do == 1:
+            self.cycle_rbv.set(1)
 
-    def ramp_on(self, start: bool):
-        self.k.source_voltage_ramp(start=0, stop=50, steps=50, seconds=20)
+    def do_ramp_on(self, start: bool):
+        seconds = self.rise_time.get()
+        to_volts = self.on_setpoint.get()
+        step_size = self.step_size.get()
+        self.k.voltage_sweep(to_volts, step_size, seconds)
 
-    def ramp_off(self, start: bool):
-        self.k.source_voltage_ramp(start=0, stop=50, steps=50, seconds=20)
+    def do_ramp_off(self, start: bool):
+        seconds = self.rise_time.get()
+        to_volts = self.off_setpoint.get()
+        step_size = self.step_size.get()
+        self.k.voltage_sweep(to_volts, step_size, seconds)

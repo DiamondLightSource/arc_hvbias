@@ -30,6 +30,7 @@ class Keithley(object):
         # set up useful defaults
         self.send_recv(":syst:beep:stat 0")  # no beeps !!!
         self.send_recv(":SOURCE:VOLTAGE:RANGE:AUTO 1")
+        self.last_recv = ""
 
     def __del__(self):
         if hasattr(self, "connection"):
@@ -39,7 +40,8 @@ class Keithley(object):
         self.ser.write((send + "\n").encode())
 
         if respond or send.endswith("?"):
-            response = self.ser.readline(100).decode()
+            self.last_recv = self.ser.readline(100).decode()
+            response = self.last_recv
             self.ser.flush()
         else:
             self.ser.flush()
@@ -82,3 +84,29 @@ class Keithley(object):
             self.get_voltage()
             voltage += (stop - start) / steps
             cothread.Sleep(seconds / steps)
+
+    def voltage_sweep(self, to_volts: float, step_size: float, seconds: float):
+        start = self.get_voltage()
+        change = to_volts - start
+        step_count = change / step_size
+        delay = seconds / step_count
+        cmd = self.sweep_commands.format(**locals())
+        self.send_recv(cmd)
+        # Complete the sweep as above gets to within 1 step of to_volts
+        cothread.Sleep(delay)
+        self.set_voltage(to_volts)
+
+    sweep_commands = """
+:SOURCE:FUNCTION:MODE VOLTAGE
+:SOURCE:VOLTAGE:MODE SWEEP
+:SOURCE:SWEEP:SPACING LINEAR
+:SOURCE:VOLTAGE:RANGE:AUTO 1
+:SOURCE:VOLTAGE:START {start}
+:SOURCE:VOLTAGE:STOP {to_volts}
+:SOURCE:VOLTAGE:STEP {step_size}
+:TRIGGER:CLEAR
+:TRIGGER:SEQ1:COUNT {step_count}
+:TRIGGER:SEQ1:DELAY {delay}
+:TRIGGER:SEQ1:SOURCE IMMEDIATE
+:OUTPUT:STATE ON
+:INIT"""
