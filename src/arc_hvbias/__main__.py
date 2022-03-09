@@ -11,7 +11,7 @@ def main(args=None):
     parser.add_argument("--version", action="version", version=__version__)
     args = parser.parse_args(args)
 
-    ioc = Ioc()
+    Ioc()
 
     # clean up
 

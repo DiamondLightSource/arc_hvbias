@@ -9,6 +9,9 @@ from softioc import builder, softioc
 
 from .keithley import Keithley
 
+# a global to hold the Ioc instance for interactive access
+ioc = None
+
 
 class Status(IntEnum):
     VOLTAGE_OFF = 0
@@ -25,6 +28,10 @@ class Ioc:
     """
 
     def __init__(self):
+        # promote the (single) instance for access via commandline
+        global ioc
+        ioc = self
+
         # connect to the Keithley via serial
         self.k = Keithley()
 
@@ -87,9 +94,10 @@ class Ioc:
     def update(self):
         while True:
             try:
-                self.voltage_rbv.set(self.k.get_voltage())
-                self.current_rbv.set(self.k.get_current())
-                self.output_rbv.set(self.k.get_source_status())
+                if not self.k.blocked():
+                    self.voltage_rbv.set(self.k.get_voltage())
+                    self.current_rbv.set(self.k.get_current())
+                    self.output_rbv.set(self.k.get_source_status())
 
                 # calculate housekeeping readbacks
                 healthy = self.output_rbv.get() == 1 and math.fabs(
@@ -133,8 +141,9 @@ class Ioc:
         self.k.set_voltage(float(volts))
 
     def do_stop(self, stop: int):
-        print(self.rise_time.get())
+        print("stopped")
         if stop == 1:
+            self.k.abort()
             self.cycle_rbv.set(0)
             self.cycle.set(0)
             self.status_rbv.set(Status.HOLD)
@@ -148,11 +157,15 @@ class Ioc:
         seconds = self.rise_time.get()
         to_volts = self.on_setpoint.get()
         step_size = self.step_size.get()
-        self.k.voltage_sweep(to_volts, step_size, seconds)
+        # sweep deprectated for now
+        # self.k.voltage_sweep(to_volts, step_size, seconds)
+        self.k.source_voltage_ramp(to_volts, step_size, seconds)
 
     def do_ramp_off(self, start: bool):
         self.status_rbv.set(Status.RAMP_UP)
-        seconds = self.rise_time.get()
+        seconds = self.fall_time.get()
         to_volts = self.off_setpoint.get()
         step_size = self.step_size.get()
-        self.k.voltage_sweep(to_volts, step_size, seconds)
+        # sweep deprecated for now
+        # self.k.voltage_sweep(to_volts, step_size, seconds)
+        self.k.source_voltage_ramp(to_volts, step_size, seconds)
