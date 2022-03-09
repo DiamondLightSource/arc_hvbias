@@ -1,6 +1,5 @@
 import math
 from datetime import datetime
-from enum import IntEnum
 
 import cothread
 
@@ -8,18 +7,10 @@ import cothread
 from softioc import builder, softioc
 
 from .keithley import Keithley
+from .status import Status
 
 # a global to hold the Ioc instance for interactive access
 ioc = None
-
-
-class Status(IntEnum):
-    VOLTAGE_OFF = 0
-    VOLTAGE_ON = 1
-    RAMP_UP = 2
-    HOLD = 3
-    RAMP_DOWN = 4
-    ERROR = 5
 
 
 class Ioc:
@@ -45,14 +36,11 @@ class Ioc:
         self.cmd_ramp_on = builder.boolOut(
             "RAMP-ON", always_update=True, on_update=self.do_ramp_on
         )
-        self.cycle = builder.boolOut(
+        self.cmd_cycle = builder.boolOut(
             "CYCLE", always_update=True, on_update=self.do_start_cycle
         )
         self.cmd_stop = builder.boolOut(
             "STOP", always_update=True, on_update=self.do_stop
-        )
-        self.cmd_output = builder.boolOut(
-            "OUTPUT", always_update=True, on_update=self.do_output
         )
         self.cmd_voltage = builder.aOut(
             "VOLTAGE", always_update=True, on_update=self.k.set_voltage
@@ -86,6 +74,7 @@ class Ioc:
         # other state variables
         self.last_time = datetime.now()
         self.last_transition = datetime.now()
+        self.abort_flag = False
 
         # Boilerplate get the IOC started
         builder.LoadDatabase()
@@ -114,47 +103,76 @@ class Ioc:
                 since = (datetime.now() - self.last_time).total_seconds()
                 self.time_since_rbv.set(int(since))
 
-                if self.cycle_rbv.get() == 1:
-                    self.cycle_control()
-
                 # update loop at 2 Hz
                 cothread.Sleep(0.5)
             except ValueError as e:
                 # catch conversion errors when device returns and error string
                 print(e, self.k.last_recv)
 
-    def cycle_control(self):
-        # this function implements a trivial state machine controlled
-        # by self.status_rbv
-        if self.status_rbv == Status.VOLTAGE_ON:
-            pass
-        elif self.status_rbv == Status.RAMP_UP:
-            pass
-        elif self.status_rbv == Status.RAMP_DOWN:
-            pass
-        elif self.status_rbv == Status.VOLTAGE_OFF:
-            pass
+    def do_start_cycle(self, do: int):
+        if do == 1 and not self.cycle_rbv.get():
+            print("start cycle")
+            cothread.Spawn(self.cycle_control)
 
-    def do_output(self, on_off: bool):
-        if on_off:
-            self.k.source_on()
-        else:
-            self.k.source_off()
+    def cycle_control(self):
+        """
+        Continuously perform a depolarisation cycle when the detector is idle
+        or after max time
+        """
+        self.abort_flag = False
+
+        try:
+            self.cycle_rbv.set(True)
+            # initially move to a bias-on state
+            # self.status_rbv.set(Status.RAMP_DOWN)
+            self.k.voltage_ramp_worker(
+                self.on_setpoint.get(), self.step_size.get(), self.fall_time.get()
+            )
+
+            while not self.abort_flag:
+                step = self.step_size.get()
+                max = self.max_time.get()
+
+                for repeat in range(self.repeats.get()):
+                    self.status_rbv.set(Status.VOLTAGE_ON)
+                    # TODO - replace this with wait for trigger or timeout
+                    cothread.Sleep(self.hold_time.get() or max)
+
+                    print(self.abort_flag)
+                    self.status_rbv.set(Status.RAMP_UP)
+                    self.healthy_rbv.set(False)
+                    self.k.voltage_ramp_worker(
+                        self.off_setpoint.get(), step, self.rise_time.get()
+                    )
+                    if self.abort_flag:
+                        break
+
+                    self.status_rbv.set(Status.VOLTAGE_OFF)
+                    cothread.Sleep(self.hold_time.get())
+                    if self.abort_flag:
+                        break
+
+                    self.status_rbv.set(Status.RAMP_DOWN)
+                    self.k.voltage_ramp_worker(
+                        self.on_setpoint.get(), step, self.fall_time.get()
+                    )
+                    if self.abort_flag:
+                        break
+
+            self.cycle_rbv.set(False)
+
+        except Exception as e:
+            print("cycle failed", e)
 
     def set_voltage(self, volts: str):
         self.k.set_voltage(float(volts))
 
     def do_stop(self, stop: int):
-        print("stopped")
         if stop == 1:
+            self.abort_flag = True
             self.k.abort()
             self.cycle_rbv.set(0)
-            self.cycle.set(0)
             self.status_rbv.set(Status.HOLD)
-
-    def do_start_cycle(self, do: int):
-        if do == 1:
-            self.cycle_rbv.set(1)
 
     def do_ramp_on(self, start: bool):
         self.status_rbv.set(Status.RAMP_DOWN)
