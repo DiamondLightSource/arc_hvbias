@@ -71,10 +71,10 @@ class Keithley(object):
         # make it mAmps
         return float(amps) * 1000
 
-    def source_off(self):
+    def source_off(self, _):
         self.send_recv(":SOURCE:CLEAR:IMMEDIATE")
 
-    def source_on(self):
+    def source_on(self, _):
         self.send_recv(":OUTPUT:STATE ON")
 
     def abort(self):
@@ -131,73 +131,6 @@ class Keithley(object):
             voltage += step_size
             cothread.Sleep(interval)
 
-    def blocked(self) -> bool:
-        """
-        returns True if the device is busy (with a sweep).
-
-        Looks for the operation complete signal during a sweep
-        and returns true if currently in a sweep
-        """
-        sweeping = False
-        if self.sweep_seconds > 0:
-            time_since = (datetime.now() - self.sweep_start).total_seconds()
-            if time_since > self.sweep_seconds:
-                # check for Operation Complete
-                result = self.ser.readline(5).decode()
-                # we ares still sweeping if we have not received the "1"
-                # from *OPC? and 10 sec timeout has not expired
-                print("OPC =", result)
-                sweeping = result != "1" and time_since - self.sweep_seconds < 10
-                if not sweeping:
-                    self.sweep_seconds = 0
-            else:
-                print("sweeping")
-        return sweeping
-
-    def sweep_volts(self):
-        """
-        TODO - major review required ...
-
-        returns an estimate of the current voltage during a sweep or 0
-        if there is no sweep
-        """
-        time_since = (datetime.now() - self.sweep_start).total_seconds()
-        if time_since > self.sweep_seconds:
-            result = 0
-        else:
-            # TODO this is incorrect - but we may not need this if
-            # we can read the sense instead of output
-            result = time_since / self.sweep_seconds
-        return result
-
-    def voltage_sweep(self, to_volts: float, step_size: float, seconds: float):
-        """
-        Do a voltage ramp using the device's sweep feature
-
-        NOTE: this is not currently in use because it is very hard to
-        synchronize the IOC with a function that stops all interaction with
-        the device. Plus it seems to take a long time to start.
-
-        IMPORTANT: this device cannot be polled while doing a sweep. You
-        can program it to take readings during the sweep but they are only
-        delivered at the end. THEREFORE we must suppress polling during a
-        sweep or we will get input buffer overruns and errors from all polls.
-        """
-
-        start = self.get_voltage()
-        change = to_volts - start
-        step_count = int(change / step_size)
-        # alter step size exactly fit into the range
-        step_size = change / step_count
-        delay = seconds / step_count
-        cmd = self.sweep_commands.format(**locals())
-
-        # setup sweep
-        self.send_recv(cmd)
-        # these class properties track when we can start polling again
-        self.sweep_start = datetime.now()
-        self.sweep_seconds = seconds
-
     startup_commands = """
 :syst:beep:stat 0
 :SENSE:FUNCTION:ON  "CURRENT:DC","VOLTAGE:DC"
@@ -205,19 +138,3 @@ class Keithley(object):
 :SENSE:VOLTAGE:RANGE:AUTO 1
 :SOURCE:VOLTAGE:RANGE:AUTO 1
 """
-
-    sweep_commands = """
-:SOURCE:FUNCTION:MODE VOLTAGE
-:SOURCE:VOLTAGE:MODE SWEEP
-:SOURCE:SWEEP:SPACING LINEAR
-:SOURCE:VOLTAGE:RANGE:AUTO 1
-:SOURCE:VOLTAGE:START {start}
-:SOURCE:VOLTAGE:STOP {to_volts}
-:SOURCE:VOLTAGE:STEP {step_size}
-:TRIGGER:CLEAR
-:TRIGGER:SEQ1:COUNT {step_count}
-:TRIGGER:SEQ1:DELAY {delay}
-:TRIGGER:SEQ1:SOURCE IMMEDIATE
-:OUTPUT:STATE ON
-:INIT
-:OPC?"""

@@ -57,6 +57,11 @@ class Ioc:
         self.cmd_voltage = builder.aOut(
             "VOLTAGE", always_update=True, on_update=self.k.set_voltage
         )
+        self.cmd_off = builder.aOut(
+            "OFF", always_update=True, on_update=self.k.source_off
+        )
+        self.cmd_on = builder.aOut("ON", always_update=True, on_update=self.k.source_on)
+
         self.voltage_rbv = builder.aIn("VOLTAGE_RBV", EGU="Volts")
         self.current_rbv = builder.aIn("CURRENT_RBV", EGU="mA", PREC=4)
         self.output_rbv = builder.mbbIn("OUTPUT_RBV", "OFF", "ON")
@@ -94,10 +99,9 @@ class Ioc:
     def update(self):
         while True:
             try:
-                if not self.k.blocked():
-                    self.voltage_rbv.set(self.k.get_voltage())
-                    self.current_rbv.set(self.k.get_current())
-                    self.output_rbv.set(self.k.get_source_status())
+                self.voltage_rbv.set(self.k.get_voltage())
+                self.current_rbv.set(self.k.get_current())
+                self.output_rbv.set(self.k.get_source_status())
 
                 # calculate housekeeping readbacks
                 healthy = self.output_rbv.get() == 1 and math.fabs(
