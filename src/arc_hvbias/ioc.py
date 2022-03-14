@@ -93,9 +93,10 @@ class Ioc:
                 self.output_rbv.set(self.k.get_source_status())
 
                 # calculate housekeeping readbacks
-                healthy = self.output_rbv.get() == 1 and math.fabs(
-                    self.voltage_rbv.get()
-                ) == math.fabs(self.on_setpoint.get())
+                healthy = (
+                    self.output_rbv.get() == 1
+                    and self.voltage_rbv.get() == -math.fabs(self.on_setpoint.get())
+                )
                 self.healthy_rbv.set(healthy)
 
                 if self.voltage_rbv.get() == -math.fabs(self.off_setpoint.get()):
@@ -111,7 +112,6 @@ class Ioc:
 
     def do_start_cycle(self, do: int):
         if do == 1 and not self.cycle_rbv.get():
-            print("start cycle")
             cothread.Spawn(self.cycle_control)
 
     def cycle_control(self):
@@ -138,7 +138,6 @@ class Ioc:
                     # TODO - replace this with wait for trigger or timeout
                     cothread.Sleep(self.hold_time.get() or max)
 
-                    print(self.abort_flag)
                     self.status_rbv.set(Status.RAMP_UP)
                     self.healthy_rbv.set(False)
                     self.k.voltage_ramp_worker(
@@ -162,7 +161,7 @@ class Ioc:
             self.cycle_rbv.set(False)
 
         except Exception as e:
-            print("cycle failed", e)
+            print("cycle failed", e, self.k.last_recv)
 
     def set_voltage(self, volts: str):
         self.k.set_voltage(float(volts))
@@ -179,8 +178,6 @@ class Ioc:
         seconds = self.rise_time.get()
         to_volts = self.on_setpoint.get()
         step_size = self.step_size.get()
-        # sweep deprectated for now
-        # self.k.voltage_sweep(to_volts, step_size, seconds)
         self.k.source_voltage_ramp(to_volts, step_size, seconds)
 
     def do_ramp_off(self, start: bool):
@@ -188,6 +185,4 @@ class Ioc:
         seconds = self.fall_time.get()
         to_volts = self.off_setpoint.get()
         step_size = self.step_size.get()
-        # sweep deprecated for now
-        # self.k.voltage_sweep(to_volts, step_size, seconds)
         self.k.source_voltage_ramp(to_volts, step_size, seconds)

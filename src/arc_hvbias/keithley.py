@@ -105,6 +105,8 @@ class Keithley(object):
         """
         self.abort_flag = False
         voltage = self.get_voltage()
+        # only allow negative values
+        to_volts = -math.fabs(to_volts)
         difference = to_volts - voltage
         if difference == 0 or seconds <= 0:
             return
@@ -115,11 +117,6 @@ class Keithley(object):
             steps = int(seconds * MAX_HZ)
         step_size = difference / steps
         interval = seconds / steps - LOOP_OVERHEAD
-
-        print(
-            f"ramp {steps} steps of {step_size} "
-            f"with interval {interval} over {seconds}s"
-        )
 
         self.send_recv(":SOURCE:FUNCTION:MODE VOLTAGE")
         self.send_recv(":SOURCE:VOLTAGE:MODE FIXED")
