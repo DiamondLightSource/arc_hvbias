@@ -1,9 +1,7 @@
 import subprocess
 import sys
 
-import cothread
-
-from arc_hvbias import __main__, __version__
+from arc_hvbias import __version__
 
 # def test_execution_debug():
 #     cmd = [sys.executable, "-m", "arc_hvbias"]
