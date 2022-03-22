@@ -15,8 +15,20 @@ This is the internal API reference for arc_hvbias
 
     Version number as calculated by https://github.com/dls-controls/versiongit
 
-.. automodule:: arc_hvbias.hello
+.. automodule:: arc_hvbias.ioc
     :members:
 
-    ``arc_hvbias.hello``
+    ``arc_hvbias.ioc``
+    -----------------------------------------
+
+.. automodule:: arc_hvbias.keithley
+    :members:
+
+    ``arc_hvbias.keithley``
+    -----------------------------------------
+
+.. automodule:: arc_hvbias.status
+    :members:
+
+    ``arc_hvbias.status``
     -----------------------------------------
