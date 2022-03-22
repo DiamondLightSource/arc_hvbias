@@ -61,11 +61,9 @@ class Ioc:
         # create some input records (for IOC inputs)
         self.on_setpoint = builder.aOut("ON-SETPOINT", initial_value=500, EGU="Volts")
         self.off_setpoint = builder.aOut("OFF-SETPOINT", EGU="Volts")
-        self.rise_time = builder.aOut(
-            "RISE-TIME", initial_value=0.25, EGU="Sec", PREC=2
-        )
-        self.hold_time = builder.aOut("HOLD-TIME", initial_value=1, EGU="Sec", PREC=2)
-        self.fall_time = builder.aOut("FALL-TIME", initial_value=0.2, EGU="Sec", PREC=2)
+        self.rise_time = builder.aOut("RISE-TIME", initial_value=2, EGU="Sec", PREC=2)
+        self.hold_time = builder.aOut("HOLD-TIME", initial_value=3, EGU="Sec", PREC=2)
+        self.fall_time = builder.aOut("FALL-TIME", initial_value=2, EGU="Sec", PREC=2)
         self.pause_time = builder.aOut("PAUSE-TIME", EGU="Sec", PREC=2)
         self.repeats = builder.longOut("REPEATS", initial_value=1)
         self.step_size = builder.aOut("STEP-SIZE", initial_value=5.0)
@@ -104,6 +102,10 @@ class Ioc:
                 since = (datetime.now() - self.last_time).total_seconds()
                 self.time_since_rbv.set(int(since))
 
+                # if max time exceeded since last depolarise then force a cycle
+                if since > self.max_time.get():
+                    self.do_start_cycle(do=1)
+
                 # update loop at 2 Hz
                 cothread.Sleep(0.5)
             except ValueError as e:
@@ -129,34 +131,32 @@ class Ioc:
                 self.on_setpoint.get(), self.step_size.get(), self.fall_time.get()
             )
 
-            while not self.abort_flag:
-                step = self.step_size.get()
-                max = self.max_time.get()
+            step = self.step_size.get()
 
-                for repeat in range(self.repeats.get()):
-                    self.status_rbv.set(Status.VOLTAGE_ON)
-                    # TODO - replace this with wait for trigger or timeout
-                    cothread.Sleep(self.hold_time.get() or max)
-
-                    self.status_rbv.set(Status.RAMP_UP)
-                    self.healthy_rbv.set(False)
-                    self.k.voltage_ramp_worker(
-                        self.off_setpoint.get(), step, self.rise_time.get()
-                    )
-                    if self.abort_flag:
-                        break
-
-                    self.status_rbv.set(Status.VOLTAGE_OFF)
+            for repeat in range(self.repeats.get()):
+                self.status_rbv.set(Status.VOLTAGE_ON)
+                if repeat > 0:
                     cothread.Sleep(self.hold_time.get())
-                    if self.abort_flag:
-                        break
 
-                    self.status_rbv.set(Status.RAMP_DOWN)
-                    self.k.voltage_ramp_worker(
-                        self.on_setpoint.get(), step, self.fall_time.get()
-                    )
-                    if self.abort_flag:
-                        break
+                self.status_rbv.set(Status.RAMP_UP)
+                self.healthy_rbv.set(False)
+                self.k.voltage_ramp_worker(
+                    self.off_setpoint.get(), step, self.rise_time.get()
+                )
+                if self.abort_flag:
+                    break
+
+                self.status_rbv.set(Status.VOLTAGE_OFF)
+                cothread.Sleep(self.hold_time.get())
+                if self.abort_flag:
+                    break
+
+                self.status_rbv.set(Status.RAMP_DOWN)
+                self.k.voltage_ramp_worker(
+                    self.on_setpoint.get(), step, self.fall_time.get()
+                )
+                if self.abort_flag:
+                    break
 
             self.cycle_rbv.set(False)
 
