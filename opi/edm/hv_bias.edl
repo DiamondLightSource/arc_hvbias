@@ -3,8 +3,8 @@ beginScreenProperties
 major 4
 minor 0
 release 1
-x 244
-y 811
+x 97
+y 59
 w 1038
 h 450
 font "arial-medium-r-16.0"
@@ -445,7 +445,7 @@ x 475
 y 185
 w 110
 h 40
-controlPv "BL15J-EA-HV-01:HOLD-TIME"
+controlPv "BL15J-EA-HV-01:PAUSE-TIME"
 precision 2
 fgColor index 25
 bgColor index 3
