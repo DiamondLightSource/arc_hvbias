@@ -10,7 +10,7 @@ Practical step-by-step guides for the more experienced user.
 
     reference/api
     reference/contributing
-    Releases <https://github.com/dls-controls/arc_hvbias/releases>
+    Releases <https://github.com/DiamondLightSource/arc_hvbias/releases>
     Index <genindex.html#http://>
 
 ..

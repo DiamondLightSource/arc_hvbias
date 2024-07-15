@@ -9,22 +9,22 @@ Intended to run on beamline BL15J at Diamond Light Source.
 
 ============== ==============================================================
 PyPI           ``pip install arc_hvbias``
-Source code    https://github.com/dls-controls/arc_hvbias
-Documentation  https://dls-controls.github.io/arc_hvbias
-Releases       https://github.com/dls-controls/arc_hvbias/releases
+Source code    https://github.com/DiamondLightSource/arc_hvbias
+Documentation  https://DiamondLightSource.github.io/arc_hvbias
+Releases       https://github.com/DiamondLightSource/arc_hvbias/releases
 ============== ==============================================================
 
 
-.. |code_ci| image:: https://github.com/dls-controls/arc_hvbias/workflows/Code%20CI/badge.svg?branch=master
-    :target: https://github.com/dls-controls/arc_hvbias/actions?query=workflow%3A%22Code+CI%22
+.. |code_ci| image:: https://github.com/DiamondLightSource/arc_hvbias/workflows/Code%20CI/badge.svg?branch=master
+    :target: https://github.com/DiamondLightSource/arc_hvbias/actions?query=workflow%3A%22Code+CI%22
     :alt: Code CI
 
-.. |docs_ci| image:: https://github.com/dls-controls/arc_hvbias/workflows/Docs%20CI/badge.svg?branch=master
-    :target: https://github.com/dls-controls/arc_hvbias/actions?query=workflow%3A%22Docs+CI%22
+.. |docs_ci| image:: https://github.com/DiamondLightSource/arc_hvbias/workflows/Docs%20CI/badge.svg?branch=master
+    :target: https://github.com/DiamondLightSource/arc_hvbias/actions?query=workflow%3A%22Docs+CI%22
     :alt: Docs CI
 
-.. |coverage| image:: https://codecov.io/gh/dls-controls/arc_hvbias/branch/master/graph/badge.svg
-    :target: https://codecov.io/gh/dls-controls/arc_hvbias
+.. |coverage| image:: https://codecov.io/gh/DiamondLightSource/arc_hvbias/branch/master/graph/badge.svg
+    :target: https://codecov.io/gh/DiamondLightSource/arc_hvbias
     :alt: Test Coverage
 
 .. |pypi_version| image:: https://img.shields.io/pypi/v/arc_hvbias.svg
@@ -39,4 +39,4 @@ Releases       https://github.com/dls-controls/arc_hvbias/releases
     Anything below this line is used when viewing README.rst and will be replaced
     when included in index.rst
 
-See https://dls-controls.github.io/arc_hvbias for more detailed documentation.
+See https://DiamondLightSource.github.io/arc_hvbias for more detailed documentation.

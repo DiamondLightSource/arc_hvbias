@@ -13,7 +13,7 @@ This is the internal API reference for arc_hvbias
 .. data:: arc_hvbias.__version__
     :type: str
 
-    Version number as calculated by https://github.com/dls-controls/versiongit
+    Version number as calculated by https://github.com/DiamondLightSource/versiongit
 
 .. automodule:: arc_hvbias.ioc
     :members:
